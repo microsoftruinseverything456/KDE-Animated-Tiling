@@ -7,7 +7,7 @@ instead of jumping there, whenever they are moved or resized in one step
 (Meta+arrows, the tile editor, a tiling script, a window rule). Dragging with
 the mouse is left alone.
 
-A port of [HyprKwin](https://github.com/DGBooth/HyprKwin/) focused purely on
+A fork of [HyprKwin](https://github.com/DGBooth/HyprKwin/) focused purely on
 its tiling animations, with improvements: smooth quick key presses, edges
 that slide open, fractional display scaling, and better maximizing.
 
