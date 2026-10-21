@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AnimatedTilingConfig</class>
+ <widget class="QWidget" name="AnimatedTilingConfig">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>480</width><height>260</height></rect>
+  </property>
+  <layout class="QFormLayout" name="form">
+   <item row="0" column="0">
+    <widget class="QLabel" name="curveLabel"><property name="text"><string>Curve:</string></property></widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="kcfg_Curve">
+     <item><property name="text"><string>Ease out (cubic)</string></property></item>
+     <item><property name="text"><string>Ease out (quadratic)</string></property></item>
+     <item><property name="text"><string>Ease out (exponential)</string></property></item>
+     <item><property name="text"><string>Overshoot</string></property></item>
+     <item><property name="text"><string>Linear</string></property></item>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QCheckBox" name="kcfg_CrossFade">
+     <property name="text"><string>Fade old contents into new when resizing</string></property>
+     <property name="toolTip"><string>Stops a growing window looking stretched. Turn off if your graphics driver struggles with it.</string></property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
