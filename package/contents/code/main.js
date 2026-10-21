@@ -37,6 +37,9 @@ class AnimatedTiling {
         effects.windowClosed.connect((window) => window.dock && this.notePanel());
         effects.windowAdded.connect((window) => this.manage(window));
         effect.configChanged.connect(() => this.loadConfig());
+        effect.animationEnded.connect((window, id) => {
+            if (window.hkAnimation === id) delete window.hkAnimation;
+        });
         effects.stackingOrder.forEach((window) => this.manage(window));
         this.loadConfig();
     }
@@ -163,6 +166,14 @@ class AnimatedTiling {
         window.hkVisual = { from: rect(from), to: rect(to), start: Date.now(), end: Date.now() + duration, ease };
     }
 
+    // Whether KWin is still animating the window. Its animations start on the
+    // next frame, so they end a little after our clock says; animationEnded
+    // tells us when, and the margin covers a KWin that never says.
+    animating(window) {
+        const v = window.hkVisual;
+        return !!window.hkAnimation && !!v && Date.now() < v.end + 250;
+    }
+
     // Where the window is drawn part way through its animation, if it is.
     visualRect(window) {
         const v = window.hkVisual;
@@ -228,6 +239,7 @@ class AnimatedTiling {
         if (this.userResizing || Date.now() - this.userResizeEnded < 150) return this.snap(window);
         // Interrupted: carry on from where it is drawn, as a plain move/resize.
         const visual = this.visualRect(window);
+        const interrupting = this.animating(window);
         const from = visual || changedFrom;
         if (!this.onScreen(from) || !this.onScreen(to)) return this.snap(window);
         if (Date.now() < this.panelUntil) {
@@ -245,9 +257,10 @@ class AnimatedTiling {
         if (!moved && !resized) return;
         const animations = this.moveAndResize(from, to);
         // Fade old contents into new ones, so a growing window is not just
-        // stretched. Not when interrupting: KWin has no picture to fade from
-        // for that first frame, and the window would vanish for it.
-        if (resized && !visual && maximize !== "no fade" && this.allowCrossFade()) {
+        // stretched. Not when interrupting, even in an animation's last frames:
+        // KWin has no picture to fade from for that first frame, and the
+        // window would vanish for it.
+        if (resized && !interrupting && maximize !== "no fade" && this.allowCrossFade()) {
             animations.push({ type: Effect.CrossFadePrevious, from: 0, to: 1, curve: this.curve });
         }
         this.run(window, this.duration, animations, from, to, this.ease);

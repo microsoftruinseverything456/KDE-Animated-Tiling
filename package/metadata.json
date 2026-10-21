@@ -8,7 +8,7 @@
         "Id": "animatedtiling",
         "License": "GPL-3.0-or-later",
         "Name": "Animated Tiling",
-        "Version": "1.0.0"
+        "Version": "1.0.1"
     },
     "X-KDE-ConfigModule": "kcm_kwin4_genericscripted",
     "X-KDE-PluginKeyword": "animatedtiling",

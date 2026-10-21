@@ -54,7 +54,7 @@ function load(config = {}, loaded = [], speed = 1) {
         "effect", "effects", "animate", "cancel", "animationTime", "print", "Effect", "QEasingCurve",
         src.replace('"use strict";', "") + "\nreturn new AnimatedTiling();",
     )(effect, effects, record, (id) => cancelled.push(id), (ms) => Math.round(ms * speed), () => {}, EFFECT, CURVES);
-    return { fx: instance, animations, effects, cancelled };
+    return { fx: instance, animations, effect, effects, cancelled };
 }
 
 const types = (spec) => spec.animations.map((a) => a.type);
@@ -281,11 +281,35 @@ Deno.test("a resize that interrupts an animation does not cross-fade", () => {
 });
 
 Deno.test("once an animation has finished, the next resize cross-fades again", () => {
-    const { fx, animations } = load();
+    const { fx, animations, effect } = load();
     const a = makeWindow("A", TOP);
     retile(fx, a, LEFT, TOP);
     a.hkVisual.end = Date.now() - 1;             // the first one has finished
+    effect.animationEnded.emit(a, a.hkAnimation);
     fx.fadeBatchStarted = 0;                     // and its batch is long gone
+    retile(fx, a, TOP, RIGHT);
+    assertEquals(faded(animations), 2);
+});
+
+Deno.test("a resize in an animation's last frames, before KWin ends it, does not cross-fade", () => {
+    // KWin starts an animation on the next frame, so it ends a little after
+    // our clock says: a cross-fade started then makes the window flash.
+    const { fx, animations } = load();
+    const a = makeWindow("A", TOP);
+    retile(fx, a, LEFT, TOP);
+    a.hkVisual.end = Date.now() - 1;             // done by our clock, not yet by KWin's
+    fx.fadeBatchStarted = 0;
+    retile(fx, a, TOP, RIGHT);
+    assertEquals(animations.length, 2);
+    assertEquals(faded(animations), 1, "only the first");
+});
+
+Deno.test("if KWin never says an animation ended, cross-fading comes back soon after", () => {
+    const { fx, animations } = load();
+    const a = makeWindow("A", TOP);
+    retile(fx, a, LEFT, TOP);
+    a.hkVisual.end = Date.now() - 1000;
+    fx.fadeBatchStarted = 0;
     retile(fx, a, TOP, RIGHT);
     assertEquals(faded(animations), 2);
 });
