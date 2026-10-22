@@ -9,8 +9,8 @@ instead of jumping there, whenever they are moved or resized in one step
 the mouse is left alone.
 
 A fork of [HyprKwin](https://github.com/DGBooth/HyprKwin/) focused purely on
-its tiling animations, with improvements: smooth quick key presses, edges
-that slide open, fractional display scaling, and better maximizing.
+its tiling animations, with improvements: smooth transitions, fractional display
+scaling, better maximizing, and use of the system animation speed.
 
 ## Install
 
