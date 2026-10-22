@@ -1,4 +1,5 @@
-<img width="426" height="240" alt="untitled" src="https://github.com/user-attachments/assets/c75f9b11-2cc0-43cd-a9c4-a187f98041f3" />
+<img width="426" height="240" alt="untitled" src="https://github.com/user-attachments/assets/31b05707-0430-4919-9c7c-e2dd49a0c538" />
+
 
 # Animated Tiling
 
