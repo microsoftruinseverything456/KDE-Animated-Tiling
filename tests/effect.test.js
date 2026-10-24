@@ -99,13 +99,6 @@ Deno.test("a later batch may cross-fade again", () => {
     assertEquals(faded(animations), 3, "the next batch starts its own count");
 });
 
-Deno.test("cross-fading can be turned off altogether", () => {
-    const { fx, animations } = load({ CrossFade: false });
-    retile(fx, makeWindow("A", LEFT), TOP, LEFT);
-    assertEquals(animations.length, 1);
-    assertEquals(faded(animations), 0);
-});
-
 Deno.test("a divider slide clips instead of resizing the picture", () => {
     const { fx, animations } = load();
     const w = makeWindow("A", { x: 0, y: 0, width: 520, height: 900 });

@@ -8,16 +8,10 @@
 
 "use strict";
 
-// The settings page's curves, as KWin names them and as functions (to work
-// out where a window is part way through an animation).
-const CURVES = ["OutCubic", "OutQuad", "OutExpo", "OutBack", "Linear"];
-const EASES = [
-    (t) => 1 - (1 - t) ** 3,
-    (t) => 1 - (1 - t) ** 2,
-    (t) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t)),
-    (t) => 1 + 2.70158 * (t - 1) ** 3 + 1.70158 * (t - 1) ** 2,
-    (t) => t,
-];
+// Plasma's standard curve, also as a function (to work out where a window is
+// part way through an animation).
+const CURVE = QEasingCurve.OutCubic;
+const ease = (t) => 1 - (1 - t) ** 3;
 
 const rect = (r) => ({ x: r.x, y: r.y, width: r.width, height: r.height });
 // With fractional scaling KWin's geometry is in fractions of a pixel, and
@@ -48,11 +42,6 @@ class AnimatedTiling {
         // Durations follow Plasma's global animation speed; "Instant" is 0.
         this.duration = animationTime(200);
         this.slideDuration = animationTime(180);
-        this.crossFade = effect.readConfig("CrossFade", true);
-        const curve = effect.readConfig("Curve", 0);
-        const index = EASES[curve] ? curve : 0;
-        this.curve = QEasingCurve[CURVES[index]];
-        this.ease = EASES[index];
     }
 
     manage(window) {
@@ -114,7 +103,7 @@ class AnimatedTiling {
         delete window.hkMaximize;                                            // it gave up
         if (!sameRect(changedFrom, g)) return "no fade";
         // Only rounding: carry on from where the maximize started.
-        this.run(window, this.duration, this.moveAndResize(m.from, g), m.from, g, this.ease);
+        this.run(window, this.duration, this.moveAndResize(m.from, g), m.from, g);
         return "skip";
     }
 
@@ -145,7 +134,6 @@ class AnimatedTiling {
     // Cross-fading draws the window offscreen, and a whole layout of those at
     // once can bring a driver down: at most two per batch.
     allowCrossFade() {
-        if (!this.crossFade) return false;
         const now = Date.now();
         if (now - this.fadeBatchStarted > 100) {
             this.fadeBatchStarted = now;
@@ -160,10 +148,10 @@ class AnimatedTiling {
     }
 
     // One animation per window; `from` and `to` are where it is drawn.
-    run(window, duration, animations, from, to, ease) {
+    run(window, duration, animations, from, to) {
         this.snap(window);
         window.hkAnimation = animate({ window, duration, animations });
-        window.hkVisual = { from: rect(from), to: rect(to), start: Date.now(), end: Date.now() + duration, ease };
+        window.hkVisual = { from: rect(from), to: rect(to), start: Date.now(), end: Date.now() + duration };
     }
 
     // Whether KWin is still animating the window. Its animations start on the
@@ -178,21 +166,21 @@ class AnimatedTiling {
     visualRect(window) {
         const v = window.hkVisual;
         if (!window.hkAnimation || !v || Date.now() >= v.end) return null;
-        const p = v.ease(Math.min(1, (Date.now() - v.start) / Math.max(1, v.end - v.start)));
+        const p = ease(Math.min(1, (Date.now() - v.start) / Math.max(1, v.end - v.start)));
         const mix = (k) => v.from[k] + (v.to[k] - v.from[k]) * p;
         return { x: mix("x"), y: mix("y"), width: mix("width"), height: mix("height") };
     }
 
     // Centre to centre, as KWin's maximize effect does, to go with the size.
-    moveAndResize(from, to, curve = this.curve) {
+    moveAndResize(from, to) {
         const animations = [{
             type: Effect.Translation,
             from: pair(from.x - to.x + (from.width - to.width) / 2, from.y - to.y + (from.height - to.height) / 2),
             to: pair(0, 0),
-            curve,
+            curve: CURVE,
         }];
         if (!sameSize(from, to)) {
-            animations.push({ type: Effect.Size, from: pair(from.width, from.height), to: pair(to.width, to.height), curve });
+            animations.push({ type: Effect.Size, from: pair(from.width, from.height), to: pair(to.width, to.height), curve: CURVE });
         }
         return animations;
     }
@@ -221,13 +209,12 @@ class AnimatedTiling {
         const share = (e) => Math.max(0, Math.min(1, edge.end ? (e - start) / size : (start + size - e) / size));
         const clip = (e) => (x ? pair(share(e), 1) : pair(1, share(e)));
         const anchor = x ? (edge.end ? Effect.Left : Effect.Right) : (edge.end ? Effect.Top : Effect.Bottom);
-        const curve = QEasingCurve.OutCubic;
-        const animations = [{ type: Effect.Clip, from: clip(edge.from), to: clip(edge.to), sourceAnchor: anchor, targetAnchor: anchor, curve }];
+        const animations = [{ type: Effect.Clip, from: clip(edge.from), to: clip(edge.to), sourceAnchor: anchor, targetAnchor: anchor, curve: CURVE }];
         if (!edge.end) {
             const shift = edge.from - edge.to;
-            animations.push({ type: Effect.Translation, from: x ? pair(shift, 0) : pair(0, shift), to: pair(0, 0), curve });
+            animations.push({ type: Effect.Translation, from: x ? pair(shift, 0) : pair(0, shift), to: pair(0, 0), curve: CURVE });
         }
-        this.run(window, this.slideDuration, animations, from, window.geometry, EASES[0]);
+        this.run(window, this.slideDuration, animations, from, window.geometry);
     }
 
     onFrameGeometryChanged(window, changedFrom) {
@@ -245,7 +232,7 @@ class AnimatedTiling {
         if (Date.now() < this.panelUntil) {
             // Re-tiles after a panel change glide together, quickly, unfaded.
             const dist = Math.max(...["x", "y", "width", "height"].map((k) => Math.abs(to[k] - from[k])));
-            return this.run(window, Math.min(this.duration, Math.max(60, Math.round(3 * dist))), this.moveAndResize(from, to), from, to, this.ease);
+            return this.run(window, Math.min(this.duration, Math.max(60, Math.round(3 * dist))), this.moveAndResize(from, to), from, to);
         }
         if (!visual) {
             const edge = this.slideDuration > 0 && this.grownEdge(from, to);
@@ -261,9 +248,9 @@ class AnimatedTiling {
         // KWin has no picture to fade from for that first frame, and the
         // window would vanish for it.
         if (resized && !interrupting && maximize !== "no fade" && this.allowCrossFade()) {
-            animations.push({ type: Effect.CrossFadePrevious, from: 0, to: 1, curve: this.curve });
+            animations.push({ type: Effect.CrossFadePrevious, from: 0, to: 1, curve: CURVE });
         }
-        this.run(window, this.duration, animations, from, to, this.ease);
+        this.run(window, this.duration, animations, from, to);
     }
 }
 

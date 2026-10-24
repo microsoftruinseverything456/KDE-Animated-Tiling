@@ -29,4 +29,3 @@ if qdbus6 org.kde.KWin /KWin >/dev/null 2>&1; then
         echo "KWin finds a new effect only when it starts: log out and back in once."
     fi
 fi
-echo "Settings: System Settings > Window Management > Desktop Effects > Animated Tiling."

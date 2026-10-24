@@ -8,4 +8,4 @@ if qdbus6 org.kde.KWin /KWin >/dev/null 2>&1; then
     qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure
 fi
 kpackagetool6 --type=KWin/Effect --remove animatedtiling
-echo "Removed. Any changed settings stay in ~/.config/kwinrc under [Effect-animatedtiling]."
+echo "Removed."
